@@ -2,18 +2,8 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from transformers import AutoModelForSequenceClassification, AdamW
 from data_tokenizer import DataTokenizer
-import pandas as pd
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
-class DataTokenizerExtended(DataTokenizer):
-    def get_tokenized_data_with_labels(self, data_url):
-        df = pd.read_csv(data_url)
-        df['text'] = df['Messages'].fillna('') + " [PAD] " + df['Remain Messages'].fillna('')
-        labels = df['label'].tolist()
-        encodings = self.tokenize_function(df['text'].tolist())
-        return encodings, labels
 
 
 def train(model, data_loader, optimizer):
@@ -33,7 +23,7 @@ def train(model, data_loader, optimizer):
 
 
 if __name__ == '__main__':
-    tokenizer = DataTokenizerExtended("bert-base-multilingual-cased")
+    tokenizer = DataTokenizer("bert-base-multilingual-cased")
     train_dataset, val_dataset = tokenizer.get_train_test_split_data('data/label_data.csv')
 
     train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
