@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from transformers import AutoModelForSequenceClassification, AdamW
 from data_tokenizer import DataTokenizer
+from tqdm.auto import tqdm
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -9,9 +10,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def train(model, data_loader, optimizer):
     model.train()
     loss_fn = torch.nn.CrossEntropyLoss()
-    print("training start")
-    for index, batch in enumerate(data_loader):
-        print(str(index/len(data_loader)*100)+"%")
+    print("Training start")
+
+    progress_bar = tqdm(data_loader, desc="Training")
+    for batch in progress_bar:
         optimizer.zero_grad()
         input_ids = batch['input_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
@@ -20,6 +22,8 @@ def train(model, data_loader, optimizer):
         loss = loss_fn(outputs.logits, labels)
         loss.backward()
         optimizer.step()
+
+        progress_bar.set_postfix({'loss': loss.item()})
 
 
 if __name__ == '__main__':
