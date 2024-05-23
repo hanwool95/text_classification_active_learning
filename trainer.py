@@ -30,8 +30,8 @@ if __name__ == '__main__':
     tokenizer = DataTokenizer("bert-base-multilingual-cased")
     train_dataset, val_dataset = tokenizer.get_train_test_split_data('data/label_data.csv')
 
-    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=4, shuffle=False)
 
     model = AutoModelForSequenceClassification.from_pretrained("bert-base-multilingual-cased", num_labels=4).to(device)
 
