@@ -42,13 +42,21 @@ class DataTokenizer:
         :return: Tokenized data.
         """
         df = pd.read_csv(data_url)
-        df['text'] = df['Messages'].fillna('') + " [PAD] " + df['Remain Messages'].fillna('')
+        df['Messages'] = df['Messages'].fillna('')  # NaN 값을 빈 문자열로 대체
+        df['Remain Messages'] = df['Remain Messages'].fillna('')  # NaN 값을 빈 문자열로 대체
+        df['text'] = df['Messages'] + " [PAD] " + df['Remain Messages']
         prepared_data = df['text'].tolist()
         return self.tokenize_function(prepared_data)
 
     def get_train_test_split_data(self, data_url: str, test_size: int = 0.5):
         df = pd.read_csv(data_url)
-        df['text'] = df['Messages'].fillna('') + " [PAD] " + df['Remain Messages'].fillna('')
+        df['Messages'] = df['Messages'].fillna('')  # NaN 값을 빈 문자열로 대체
+        df['Remain Messages'] = df['Remain Messages'].fillna('')  # NaN 값을 빈 문자열로 대체
+        df['text'] = df['Messages'] + " [PAD] " + df['Remain Messages']
+
+        # NaN 값을 가진 레이블 제거
+        df = df.dropna(subset=['label'])
+
         texts = df['text'].tolist()
         labels = df['label'].tolist()
 
