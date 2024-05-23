@@ -6,7 +6,12 @@ from data_tokenizer import DataTokenizer
 from tqdm.auto import tqdm
 from sklearn.metrics import accuracy_score, f1_score
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if torch.backends.mps.is_available():
+    device = torch.device("mps")
+elif torch.cuda.is_available():
+    device = torch.device("cuda")
+else:
+    device = torch.device("cpu")
 
 
 def train(model, data_loader, optimizer):
@@ -84,4 +89,4 @@ if __name__ == '__main__':
     print(f"Accuracy: {accuracy}")
     print(f"F1 Score: {f1}")
 
-    save_model(model, 'model/24_05_23_v1_51_saved_model.pth')
+    save_model(model, 'model/saved_model.pth')
