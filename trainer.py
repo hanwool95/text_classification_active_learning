@@ -80,7 +80,7 @@ if __name__ == '__main__':
 
     model = AutoModelForSequenceClassification.from_pretrained("bert-base-multilingual-cased", num_labels=4).to(device)
 
-    optimizer = AdamW(model.parameters(), lr=5e-5)
+    optimizer = AdamW(model.parameters(), lr=3e-5)
 
     train(model, train_loader, optimizer)
 
