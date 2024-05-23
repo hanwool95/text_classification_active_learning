@@ -1,7 +1,7 @@
 import os
 import torch
 from torch.utils.data import DataLoader, Dataset
-from transformers import AutoModelForSequenceClassification, AdamW
+from transformers import AutoModelForSequenceClassification, AdamW, get_linear_schedule_with_warmup
 from data_tokenizer import DataTokenizer
 from tqdm.auto import tqdm
 from sklearn.metrics import accuracy_score, f1_score
@@ -14,18 +14,28 @@ def train(model, data_loader, optimizer):
     loss_fn = torch.nn.CrossEntropyLoss()
     print("Training start")
 
-    progress_bar = tqdm(data_loader, desc="Training")
-    for batch in progress_bar:
-        optimizer.zero_grad()
-        input_ids = batch['input_ids'].to(device)
-        attention_mask = batch['attention_mask'].to(device)
-        labels = batch['labels'].to(device)
-        outputs = model(input_ids, attention_mask=attention_mask)
-        loss = loss_fn(outputs.logits, labels)
-        loss.backward()
-        optimizer.step()
+    num_epochs = 5
+    num_training_steps = len(data_loader) * num_epochs
+    num_warmup_steps = int(0.1 * num_training_steps)
 
-        progress_bar.set_postfix({'loss': loss.item()})
+    # Initialize the scheduler
+    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=num_warmup_steps,
+                                                num_training_steps=num_training_steps)
+
+    for epoch in range(num_epochs):
+        progress_bar = tqdm(data_loader, desc=f"Training Epoch {epoch + 1}")
+        for batch in progress_bar:
+            optimizer.zero_grad()
+            input_ids = batch['input_ids'].to(device)
+            attention_mask = batch['attention_mask'].to(device)
+            labels = batch['labels'].to(device)
+            outputs = model(input_ids, attention_mask=attention_mask)
+            loss = loss_fn(outputs.logits, labels)
+            loss.backward()
+            optimizer.step()
+            scheduler.step()
+
+            progress_bar.set_postfix({'loss': loss.item()})
 
 def evaluate(model, data_loader):
     model.eval()
@@ -74,4 +84,4 @@ if __name__ == '__main__':
     print(f"Accuracy: {accuracy}")
     print(f"F1 Score: {f1}")
 
-    save_model(model, 'model/saved_model.pth')
+    save_model(model, 'model/24_05_23_v1_51_saved_model.pth')
