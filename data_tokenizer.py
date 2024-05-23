@@ -19,6 +19,17 @@ class LabelDataset(Dataset):
         return len(self.labels)
 
 
+class UnlabeledDataset(Dataset):
+    def __init__(self, encodings):
+        self.encodings = encodings
+
+    def __getitem__(self, idx):
+        return {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
+
+    def __len__(self):
+        return len(self.encodings['input_ids'])
+
+
 class DataTokenizer:
     def __init__(self, model_name: str):
         """
@@ -34,6 +45,9 @@ class DataTokenizer:
         :return: Tokenized output.
         """
         return self.tokenizer(texts, padding="max_length", truncation=True)
+
+    def decode(self, token_ids, skip_special_tokens=True):
+        return self.tokenizer.decode(token_ids, skip_special_tokens=skip_special_tokens)
 
     def get_tokenized_data(self, data_url: str):
         """
@@ -70,6 +84,17 @@ class DataTokenizer:
         test_dataset = LabelDataset(test_encodings, test_labels)
 
         return train_dataset, test_dataset
+
+    def get_unlabeled_data(self, data_url: str):
+        df = pd.read_csv(data_url)
+        df['Messages'] = df['Messages'].fillna('')
+        df['Remain Messages'] = df['Remain Messages'].fillna('')
+        df['text'] = df['Messages'] + " [PAD] " + df['Remain Messages']
+
+        texts = df['text'].tolist()
+        encodings = self.tokenize_function(texts)
+
+        return UnlabeledDataset(encodings)
 
 
 if __name__ == '__main__':

@@ -5,6 +5,7 @@ from transformers import AutoModelForSequenceClassification, AdamW, get_linear_s
 from data_tokenizer import DataTokenizer
 from tqdm.auto import tqdm
 from sklearn.metrics import accuracy_score, f1_score
+import pandas as pd
 
 
 class TextClassifier:
@@ -91,6 +92,32 @@ class TextClassifier:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         torch.save(self.model.state_dict(), path)
         print(f"Model saved to {path}")
+
+    def load_model(self, path):
+        self.model.load_state_dict(torch.load(path, map_location=self.device))
+        self.model.to(self.device)
+        print(f"Model loaded from {path}")
+
+    def save_data_to_csv(self, data, path, is_uncertain_data=False):
+
+        texts = self.decode_tokens(data)
+
+        if is_uncertain_data:
+            df = pd.DataFrame({
+                'text': texts,
+                'predicted_label': [data['pred'] for data in data],
+                'confidence': [data['confidence'] for data in data]
+            })
+        else:
+            df = pd.DataFrame({
+                'text': texts,
+                'label': [data['label'] for data in data]
+            })
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        df.to_csv(path, index=False)
+
+    def decode_tokens(self, encoded_data):
+        return [self.tokenizer.decode(data['input_ids'], skip_special_tokens=True) for data in encoded_data]
 
 
 if __name__ == '__main__':
