@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader
 import torch
 from tqdm.auto import tqdm
 from data_tokenizer import LabelDataset
+import pandas as pd
 
 class ActiveLearningClassifier(TextClassifier):
     def __init__(self, model_name, num_labels, train_data_path, device=None, learning_rate=3e-5, batch_size=4, num_epochs=5, confidence_threshold=0.9):
@@ -10,7 +11,7 @@ class ActiveLearningClassifier(TextClassifier):
         self.confidence_threshold = confidence_threshold
 
     def label_data(self, unlabeled_data_path):
-        unlabeled_dataset = self.tokenizer.get_unlabeled_data(unlabeled_data_path)
+        unlabeled_dataset, original_indices = self.tokenizer.get_unlabeled_data_with_indices(unlabeled_data_path)
         unlabeled_loader = DataLoader(unlabeled_dataset, batch_size=self.batch_size, shuffle=False)
 
         self.model.eval()
@@ -18,31 +19,35 @@ class ActiveLearningClassifier(TextClassifier):
         uncertain_data = []
 
         with torch.no_grad():
-            for batch in tqdm(unlabeled_loader, desc="Labeling Data"):
+            for batch_idx, batch in enumerate(tqdm(unlabeled_loader, desc="Labeling Data")):
                 input_ids = batch['input_ids'].to(self.device)
                 attention_mask = batch['attention_mask'].to(self.device)
                 outputs = self.model(input_ids, attention_mask=attention_mask)
                 probs = torch.softmax(outputs.logits, dim=1)
                 max_probs, preds = torch.max(probs, dim=1)
+                batch_indices = original_indices[batch_idx * self.batch_size: (batch_idx + 1) * self.batch_size]
                 for i, prob in enumerate(max_probs):
+                    data_point = {
+                        'input_ids': input_ids[i].cpu().numpy(),
+                        'attention_mask': attention_mask[i].cpu().numpy(),
+                        'index': batch_indices[i]
+                    }
                     if prob.item() < self.confidence_threshold:
-                        uncertain_data.append({
-                            'input_ids': input_ids[i].cpu().numpy(),
-                            'attention_mask': attention_mask[i].cpu().numpy(),
+                        data_point.update({
                             'pred': preds[i].item(),
                             'confidence': prob.item()
                         })
+                        uncertain_data.append(data_point)
                     else:
-                        labeled_data.append({
-                            'input_ids': input_ids[i].cpu().numpy(),
-                            'attention_mask': attention_mask[i].cpu().numpy(),
+                        data_point.update({
                             'label': preds[i].item()
                         })
+                        labeled_data.append(data_point)
 
         return labeled_data, uncertain_data
 
     def train_on_labeled_data(self, labeled_data):
-        encodings = {key: [d[key] for d in labeled_data] for key in labeled_data[0].keys() if key != 'label'}
+        encodings = {key: [d[key] for d in labeled_data] for key in labeled_data[0].keys() if key not in ['label', 'index']}
         labels = [d['label'] for d in labeled_data]
         train_dataset = LabelDataset(encodings, labels)
         self.train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
@@ -59,8 +64,11 @@ class ActiveLearningClassifier(TextClassifier):
 
         # Combine the new human labeled data with the existing labeled data
         refined_data = labeled_data + human_labeled_data
-        self.train_on_labeled_data(refined_data)
 
+        # Save refined data to CSV
+        self.save_combined_data_to_csv(refined_data, 'data/result/combined_labeled_data.csv')
+
+        self.train_on_labeled_data(refined_data)
 
 if __name__ == '__main__':
     active_classifier = ActiveLearningClassifier(

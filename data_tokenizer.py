@@ -85,7 +85,7 @@ class DataTokenizer:
 
         return train_dataset, test_dataset
 
-    def get_unlabeled_data(self, data_url: str):
+    def get_unlabeled_data_with_indices(self, data_url: str):
         df = pd.read_csv(data_url)
         df['Messages'] = df['Messages'].fillna('')
         df['Remain Messages'] = df['Remain Messages'].fillna('')
@@ -93,11 +93,6 @@ class DataTokenizer:
 
         texts = df['text'].tolist()
         encodings = self.tokenize_function(texts)
+        indices = df.index.tolist()
 
-        return UnlabeledDataset(encodings)
-
-
-if __name__ == '__main__':
-    tokenizer = DataTokenizer("bert-base-multilingual-cased")
-    tokenized_data = tokenizer.get_tokenized_data('data/label_data.csv')
-    print(tokenized_data['input_ids'][0])
+        return UnlabeledDataset(encodings), indices

@@ -99,22 +99,37 @@ class TextClassifier:
         print(f"Model loaded from {path}")
 
     def save_data_to_csv(self, data, path, is_uncertain_data=False):
-
         texts = self.decode_tokens(data)
+        indices = [d['index'] for d in data]
 
         if is_uncertain_data:
             df = pd.DataFrame({
+                'index': indices,
                 'text': texts,
-                'predicted_label': [data['pred'] for data in data],
-                'confidence': [data['confidence'] for data in data]
+                'predicted_label': [d['pred'] for d in data],
+                'confidence': [d['confidence'] for d in data]
             })
         else:
             df = pd.DataFrame({
+                'index': indices,
                 'text': texts,
-                'label': [data['label'] for data in data]
+                'label': [d['label'] for d in data]
             })
-        os.makedirs(os.path.dirname(path), exist_ok=True)
+        df.sort_values(by='index', inplace=True)
         df.to_csv(path, index=False)
+        print(f"Data saved to {path}")
+
+    def save_combined_data_to_csv(self, data, path):
+        texts = self.decode_tokens(data)
+        indices = [d['index'] for d in data]
+        df = pd.DataFrame({
+            'index': indices,
+            'text': texts,
+            'label': [d['label'] for d in data]
+        })
+        df.sort_values(by='index', inplace=True)
+        df.to_csv(path, index=False)
+        print(f"Combined labeled data saved to {path}")
 
     def decode_tokens(self, encoded_data):
         return [self.tokenizer.decode(data['input_ids'], skip_special_tokens=True) for data in encoded_data]
