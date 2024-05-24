@@ -57,10 +57,15 @@ class ActiveLearningClassifier(TextClassifier):
         human_labeled_data = []
         for data in uncertain_data:
             text = self.tokenizer.decode(data['input_ids'], skip_special_tokens=True)
-            print(f"Text: {text}")
-            label = input("Enter the correct label: ")
-            data['label'] = int(label)
-            human_labeled_data.append(data)
+            while True:
+                try:
+                    print(f"Text: {text}")
+                    label = int(input("Enter the correct label: "))
+                    data['label'] = label
+                    human_labeled_data.append(data)
+                    break
+                except ValueError:
+                    print("Invalid input. Please enter a valid integer label.")
 
         # Combine the new human labeled data with the existing labeled data
         refined_data = labeled_data + human_labeled_data
