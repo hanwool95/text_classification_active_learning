@@ -48,17 +48,17 @@ class ActiveLearningClassifier(TextClassifier):
         self.train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
         self.train()
 
-    def refine_with_human_labels(self, uncertain_data):
-        human_labels = []
+    def refine_with_human_labels(self, uncertain_data, labeled_data):
+        human_labeled_data = []
         for data in uncertain_data:
             text = self.tokenizer.decode(data['input_ids'], skip_special_tokens=True)
             print(f"Text: {text}")
             label = input("Enter the correct label: ")
             data['label'] = int(label)
-            human_labels.append(data)
+            human_labeled_data.append(data)
 
         # Combine the new human labeled data with the existing labeled data
-        refined_data = human_labels
+        refined_data = labeled_data + human_labeled_data
         self.train_on_labeled_data(refined_data)
 
 
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     active_classifier.save_data_to_csv(uncertain_data, 'data/result/uncertain_data.csv', is_uncertain_data=True)
 
     # Refine with human labels and train the model again
-    active_classifier.refine_with_human_labels(uncertain_data)
+    active_classifier.refine_with_human_labels(uncertain_data, labeled_data)
 
     # Evaluate the refined model
     val_loss, accuracy, f1 = active_classifier.evaluate()
