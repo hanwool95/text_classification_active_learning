@@ -80,15 +80,15 @@ if __name__ == '__main__':
     active_classifier = ActiveLearningClassifier(
         model_name="bert-base-multilingual-cased",
         num_labels=4,
-        train_data_path='data/label_data.csv',
-        confidence_threshold=0.5,
+        train_data_path='data/label_data_v2.csv',
+        confidence_threshold=0.7,
     )
 
     # Load the pre-trained model
-    active_classifier.load_model('model/saved_model.pth')
+    active_classifier.load_model('model/24_05_24_55_refined_model.pth')
 
     # Label the data and get uncertain data
-    labeled_data, uncertain_data = active_classifier.label_data('data/unlabeled_data_0_to_200.csv')
+    labeled_data, uncertain_data = active_classifier.label_data('data/unlabeled_data_200_to_400.csv')
     print(f"Labeled Data: {len(labeled_data)}")
     print(f"Uncertain Data: {len(uncertain_data)}")
 
