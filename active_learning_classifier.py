@@ -75,11 +75,13 @@ class ActiveLearningClassifier(TextClassifier):
 
         self.train_on_labeled_data(refined_data)
 
+
 if __name__ == '__main__':
     active_classifier = ActiveLearningClassifier(
         model_name="bert-base-multilingual-cased",
         num_labels=4,
-        train_data_path='data/label_data.csv'
+        train_data_path='data/label_data.csv',
+        confidence_threshold=0.5,
     )
 
     # Load the pre-trained model
