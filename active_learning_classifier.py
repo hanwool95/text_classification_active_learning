@@ -4,10 +4,8 @@ import torch
 from tqdm.auto import tqdm
 from data_tokenizer import LabelDataset
 
-
 class ActiveLearningClassifier(TextClassifier):
-    def __init__(self, model_name, num_labels, train_data_path, device=None, learning_rate=3e-5, batch_size=4,
-                 num_epochs=5, confidence_threshold=0.9):
+    def __init__(self, model_name, num_labels, train_data_path, device=None, learning_rate=3e-5, batch_size=4, num_epochs=5, confidence_threshold=0.9):
         super().__init__(model_name, num_labels, train_data_path, device, learning_rate, batch_size, num_epochs)
         self.confidence_threshold = confidence_threshold
 
@@ -44,20 +42,23 @@ class ActiveLearningClassifier(TextClassifier):
         return labeled_data, uncertain_data
 
     def train_on_labeled_data(self, labeled_data):
-        # Convert labeled_data to dataset format suitable for DataLoader
-        train_dataset = LabelDataset(labeled_data)
-        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
-
-        # Train the model on the newly labeled data
+        encodings = {key: [d[key] for d in labeled_data] for key in labeled_data[0].keys() if key != 'label'}
+        labels = [d['label'] for d in labeled_data]
+        train_dataset = LabelDataset(encodings, labels)
+        self.train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
         self.train()
 
-    def refine_with_human_labels(self, uncertain_data, human_labels):
-        # Combine uncertain data with human labels
-        for i, data in enumerate(uncertain_data):
-            data['label'] = human_labels[i]
+    def refine_with_human_labels(self, uncertain_data):
+        human_labels = []
+        for data in uncertain_data:
+            text = self.tokenizer.decode(data['input_ids'], skip_special_tokens=True)
+            print(f"Text: {text}")
+            label = input("Enter the correct label: ")
+            data['label'] = int(label)
+            human_labels.append(data)
 
-        # Add the refined data to the existing training dataset
-        refined_data = self.tokenizer.combine_with_existing_data(uncertain_data)
+        # Combine the new human labeled data with the existing labeled data
+        refined_data = human_labels
         self.train_on_labeled_data(refined_data)
 
 
@@ -69,8 +70,9 @@ if __name__ == '__main__':
     )
 
     # Load the pre-trained model
-    active_classifier.load_model('model/24_05_23_v1_54_saved_model.pth')
+    active_classifier.load_model('model/saved_model.pth')
 
+    # Label the data and get uncertain data
     labeled_data, uncertain_data = active_classifier.label_data('data/unlabeled_data_0_to_200.csv')
     print(f"Labeled Data: {len(labeled_data)}")
     print(f"Uncertain Data: {len(uncertain_data)}")
@@ -78,3 +80,15 @@ if __name__ == '__main__':
     # Save labeled and uncertain data to CSV files
     active_classifier.save_data_to_csv(labeled_data, 'data/result/labeled_data.csv')
     active_classifier.save_data_to_csv(uncertain_data, 'data/result/uncertain_data.csv', is_uncertain_data=True)
+
+    # Refine with human labels and train the model again
+    active_classifier.refine_with_human_labels(uncertain_data)
+
+    # Evaluate the refined model
+    val_loss, accuracy, f1 = active_classifier.evaluate()
+    print(f"Validation Loss: {val_loss}")
+    print(f"Accuracy: {accuracy}")
+    print(f"F1 Score: {f1}")
+
+    # Save the refined model
+    active_classifier.save_model('model/refined_model.pth')
