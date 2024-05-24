@@ -136,8 +136,8 @@ class TextClassifier:
 
 
 if __name__ == '__main__':
-    classifier = TextClassifier(model_name="bert-base-multilingual-cased", num_labels=4,
-                                train_data_path='data/label_data.csv')
+    classifier = TextClassifier(model_name="bert-base-multilingual-cased", num_labels=5,
+                                train_data_path='data/data_5label_v4.csv')
     classifier.train()
     val_loss, accuracy, f1 = classifier.evaluate()
     print(f"Validation Loss: {val_loss}")
