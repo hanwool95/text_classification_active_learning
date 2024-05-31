@@ -60,6 +60,8 @@ class ActiveLearningClassifier(TextClassifier):
             while True:
                 try:
                     print(f"Text: {text}")
+                    print(f"model prediction: {data['pred']}")
+                    print(f"model confidence: {data['confidence']}")
                     label = int(input("Enter the correct label: "))
                     data['label'] = label
                     human_labeled_data.append(data)
