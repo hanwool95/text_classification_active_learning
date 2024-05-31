@@ -4,11 +4,11 @@ if __name__ == '__main__':
     classifier = TextClassifier(
         model_name="bert-base-multilingual-cased",
         num_labels=5,
-        train_data_path='data/label_data.csv'
+        train_data_path='data/label_data_v3.csv'
     )
 
     # Load the pre-trained model
-    classifier.load_model('model/24_05_24_43_refined_model.pth')
+    classifier.load_model('model/24_05_25_69_until600_total.pth')
 
     # Evaluate the refined model
     val_loss, accuracy, f1 = classifier.evaluate()
